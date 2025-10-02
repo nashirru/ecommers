@@ -1,12 +1,8 @@
 <?php
 // File: app/views/admin/reports.php
-require_once '../app/models/User.php';
-$user_model = new User($conn);
-if (!isset($_SESSION['user_id']) || !$user_model->isAdmin($_SESSION['user_id'])) {
-    header('Location: index.php?page=home');
-    exit();
-}
-require_once '../app/models/Order.php';
+
+// Menggunakan BASE_PATH yang sudah didefinisikan di router admin
+require_once BASE_PATH . '/app/models/Order.php';
 $order_model = new Order($conn);
 $report = $order_model->getSalesReport();
 ?>

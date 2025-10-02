@@ -7,6 +7,8 @@ require_once '../../app/models/Category.php';
 require_once '../../app/models/Banner.php';
 require_once '../../app/models/Order.php';
 require_once '../../app/models/User.php';
+// Tambahkan model Setting
+require_once '../../app/models/Setting.php';
 
 // Cek jika user adalah admin
 $user_model = new User($conn);
@@ -124,6 +126,37 @@ if ($action === 'delete_banner') {
     header("Location: ../../public/admin/index.php?page=banners&status=deleted");
     exit();
 }
+
+// --- PENGATURAN UMUM ---
+if ($action === 'update_general_settings') {
+    $setting_model = new Setting($conn);
+
+    // Update email dan alamat
+    $setting_model->updateSetting('store_email', $_POST['store_email']);
+    $setting_model->updateSetting('store_address', $_POST['store_address']);
+
+    // Handle upload logo jika ada
+    if (isset($_FILES['store_logo']) && $_FILES['store_logo']['error'] == 0) {
+        $target_dir = "../../public/assets/images/";
+        $image_name = "store_logo_" . uniqid() . '.' . pathinfo($_FILES["store_logo"]["name"], PATHINFO_EXTENSION);
+        $target_file = $target_dir . $image_name;
+        
+        if (move_uploaded_file($_FILES["store_logo"]["tmp_name"], $target_file)) {
+            // Hapus logo lama jika ada dan bukan default
+            $current_settings = $setting_model->getAllAsAssoc();
+            $old_logo = $current_settings['store_logo'] ?? '';
+            if ($old_logo && file_exists($target_dir . $old_logo) && strpos($old_logo, 'default') === false) {
+                unlink($target_dir . $old_logo);
+            }
+            // Update nama logo baru di database
+            $setting_model->updateSetting('store_logo', $image_name);
+        }
+    }
+
+    header("Location: ../../public/admin/index.php?page=general&status=updated");
+    exit();
+}
+
 
 // --- UPDATE STATUS PESANAN ---
 if ($action === 'update_order_status') {

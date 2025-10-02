@@ -21,8 +21,9 @@ if (!isset($_SESSION['user_id']) || !$user_model->isAdmin($_SESSION['user_id']))
 // Tentukan halaman admin yang akan ditampilkan
 $page = $_GET['page'] ?? 'dashboard';
 
-// Sertakan header khusus admin menggunakan path absolut
-require_once BASE_PATH . '/app/views/admin/partials/header.php';
+// --- PERBAIKAN DI SINI ---
+// Mengubah 'partials' menjadi 'partial' agar sesuai dengan nama folder yang benar.
+require_once BASE_PATH . '/app/views/admin/partial/header.php';
 
 // Routing untuk halaman-halaman di dalam panel admin
 $view_path = BASE_PATH . '/app/views/admin/' . $page . '.php';
@@ -34,6 +35,7 @@ if (file_exists($view_path)) {
     require_once BASE_PATH . '/app/views/admin/dashboard.php';
 }
 
-// Sertakan footer khusus admin menggunakan path absolut
-require_once BASE_PATH . '/app/views/admin/partials/footer.php';
+// --- PERBAIKAN DI SINI ---
+// Mengubah 'partials' menjadi 'partial' agar sesuai dengan nama folder yang benar.
+require_once BASE_PATH . '/app/views/admin/partial/footer.php';
 ?>

@@ -11,17 +11,21 @@ class Product {
     /**
      * Membuat produk baru.
      */
-    public function create($name, $description, $price, $stock, $image) {
-        $stmt = $this->conn->prepare("INSERT INTO products (name, description, price, stock, image) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssdis", $name, $description, $price, $stock, $image);
+    public function create($name, $description, $price, $stock, $categoryId, $image) {
+        $stmt = $this->conn->prepare("INSERT INTO products (name, description, price, stock, category_id, image) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssdiis", $name, $description, $price, $stock, $categoryId, $image);
         return $stmt->execute();
     }
 
     /**
-     * Mengambil semua produk.
+     * Mengambil semua produk dengan nama kategorinya.
      */
     public function getAll() {
-        $result = $this->conn->query("SELECT * FROM products ORDER BY created_at DESC");
+        $sql = "SELECT p.*, c.name as category_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                ORDER BY p.created_at DESC";
+        $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
@@ -29,7 +33,11 @@ class Product {
      * Mengambil produk terbaru dengan limit.
      */
     public function getLatest($limit = 8) {
-        $stmt = $this->conn->prepare("SELECT * FROM products ORDER BY created_at DESC LIMIT ?");
+        $sql = "SELECT p.*, c.name as category_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                ORDER BY p.created_at DESC LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $limit);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -37,10 +45,14 @@ class Product {
     }
 
     /**
-     * Mengambil satu produk berdasarkan ID.
+     * Mengambil satu produk berdasarkan ID dengan nama kategorinya.
      */
     public function getById($id) {
-        $stmt = $this->conn->prepare("SELECT * FROM products WHERE id = ?");
+        $sql = "SELECT p.*, c.name as category_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE p.id = ?";
+        $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -67,13 +79,13 @@ class Product {
     /**
      * Memperbarui data produk.
      */
-    public function update($id, $name, $description, $price, $stock, $image = null) {
+    public function update($id, $name, $description, $price, $stock, $categoryId, $image = null) {
         if ($image) {
-            $stmt = $this->conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, image = ? WHERE id = ?");
-            $stmt->bind_param("ssdisi", $name, $description, $price, $stock, $image, $id);
+            $stmt = $this->conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, image = ? WHERE id = ?");
+            $stmt->bind_param("ssdiisi", $name, $description, $price, $stock, $categoryId, $image, $id);
         } else {
-            $stmt = $this->conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ? WHERE id = ?");
-            $stmt->bind_param("ssdisi", $name, $description, $price, $stock, $id);
+            $stmt = $this->conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ? WHERE id = ?");
+            $stmt->bind_param("ssdisi", $name, $description, $price, $stock, $categoryId, $id);
         }
         return $stmt->execute();
     }

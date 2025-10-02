@@ -3,15 +3,7 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-// Pencegahan error jika file ini dipanggil dari folder di luar /public
-$user_model_path = isset($is_auth_page) ? '../app/models/User.php' : '../app/models/User.php';
-$db_config_path = isset($is_auth_page) ? '../config/db.php' : '../config/db.php';
-
-require_once $db_config_path;
-require_once $user_model_path;
-
-$user_model = new User($conn);
-$is_admin = isset($_SESSION['user_id']) && $user_model->isAdmin($_SESSION['user_id']);
+// $settings sudah tersedia dari router
 
 // Hitung item di keranjang
 $cart_count = 0;
@@ -27,7 +19,7 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warok Kite - Toko Layangan Modern</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; }
@@ -40,8 +32,12 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
                 <div class="flex h-20 items-center justify-between">
                     <!-- Logo -->
                     <div class="flex items-center">
-                        <a href="index.php" class="flex-shrink-0 text-2xl font-bold text-indigo-600">
-                           Warok Kite
+                        <a href="index.php" class="flex-shrink-0">
+                           <?php if (!empty($settings['store_logo'])): ?>
+                                <img class="h-12 w-auto" src="assets/images/<?php echo htmlspecialchars($settings['store_logo']); ?>" alt="Warok Kite Logo">
+                           <?php else: ?>
+                               <span class="text-2xl font-bold text-indigo-600">Warok Kite</span>
+                           <?php endif; ?>
                         </a>
                     </div>
 
@@ -73,7 +69,11 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
                         
                         <div class="hidden sm:flex items-center space-x-2 border-l pl-4">
                             <?php if (isset($_SESSION['user_id'])): ?>
-                                <a href="index.php?page=dashboard" class="text-sm font-medium text-gray-700 hover:text-indigo-600"><?php echo htmlspecialchars($_SESSION['username']); ?></a>
+                                <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
+                                     <a href="admin/" class="text-sm font-medium text-red-600 hover:text-red-800">Admin Panel</a>
+                                <?php else: ?>
+                                     <a href="index.php?page=dashboard" class="text-sm font-medium text-gray-700 hover:text-indigo-600"><?php echo htmlspecialchars($_SESSION['username']); ?></a>
+                                <?php endif; ?>
                                 <span class="text-gray-300">|</span>
                                 <a href="../auth/logout.php" class="text-sm font-medium text-gray-700 hover:text-indigo-600">Logout</a>
                             <?php else: ?>
@@ -86,9 +86,7 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
                  <div class="hidden md:flex h-12 items-center justify-center space-x-8 border-t">
                     <a href="index.php?page=home" class="text-gray-600 hover:text-indigo-600 font-medium">Home</a>
                     <a href="index.php?page=products" class="text-gray-600 hover:text-indigo-600 font-medium">Semua Produk</a>
-                    <?php if ($is_admin): ?>
-                        <a href="admin/" class="text-red-500 hover:text-indigo-600 font-bold">Admin Panel</a>
-                    <?php elseif (isset($_SESSION['user_id'])): ?>
+                    <?php if (isset($_SESSION['user_id']) && !(isset($_SESSION['is_admin']) && $_SESSION['is_admin'])): ?>
                         <a href="index.php?page=orders" class="text-gray-600 hover:text-indigo-600 font-medium">Pesanan Saya</a>
                     <?php endif; ?>
                 </div>

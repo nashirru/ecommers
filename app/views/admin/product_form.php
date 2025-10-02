@@ -1,16 +1,11 @@
 <?php
 // File: app/views/admin/product_form.php
-require_once '../app/models/User.php';
-$user_model = new User($conn);
+// Menggunakan BASE_PATH untuk path yang andal
+require_once BASE_PATH . '/app/models/Product.php';
+require_once BASE_PATH . '/app/models/Category.php';
 
-// Proteksi halaman
-if (!isset($_SESSION['user_id']) || !$user_model->isAdmin($_SESSION['user_id'])) {
-    header('Location: index.php?page=home');
-    exit();
-}
-
-require_once '../app/models/Product.php';
 $product_model = new Product($conn);
+$category_model = new Category($conn);
 
 $product = null;
 $is_edit = false;
@@ -20,15 +15,14 @@ if (isset($_GET['id'])) {
         $is_edit = true;
     }
 }
+// Mengambil semua data kategori untuk ditampilkan di dropdown
+$categories = $category_model->getAll();
 ?>
-<header class="bg-white shadow">
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900"><?php echo $is_edit ? 'Edit Produk' : 'Tambah Produk Baru'; ?></h1>
-    </div>
-</header>
+<h1 class="text-3xl font-bold tracking-tight text-gray-900 mb-6"><?php echo $is_edit ? 'Edit Produk' : 'Tambah Produk Baru'; ?></h1>
+
 <div class="mt-6 bg-white p-8 rounded-lg shadow-lg">
-    <form action="../app/controllers/admin_handler.php" method="POST" enctype="multipart/form-data" class="space-y-6">
-        <input type="hidden" name="action" value="<?php echo $is_edit ? 'update' : 'create'; ?>">
+    <form action="../../app/controllers/admin_handler.php" method="POST" enctype="multipart/form-data" class="space-y-6">
+        <input type="hidden" name="action" value="<?php echo $is_edit ? 'update_product' : 'create_product'; ?>">
         <?php if ($is_edit): ?>
             <input type="hidden" name="id" value="<?php echo $product['id']; ?>">
         <?php endif; ?>
@@ -36,6 +30,22 @@ if (isset($_GET['id'])) {
         <div>
             <label for="name" class="block text-sm font-medium text-gray-700">Nama Produk</label>
             <input type="text" name="name" id="name" required value="<?php echo htmlspecialchars($product['name'] ?? ''); ?>" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        </div>
+
+        <!-- Dropdown untuk memilih kategori -->
+        <div>
+            <label for="category_id" class="block text-sm font-medium text-gray-700">Kategori</label>
+            <select name="category_id" id="category_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                <option value="">-- Pilih Kategori --</option>
+                <?php foreach ($categories as $category): ?>
+                    <option value="<?php echo $category['id']; ?>" <?php echo (isset($product['category_id']) && $product['category_id'] == $category['id']) ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($category['name']); ?>
+                    </option>
+                <?php endforeach; ?>
+                 <?php if (empty($categories)): ?>
+                    <option disabled>Belum ada kategori. Silakan tambah dulu.</option>
+                <?php endif; ?>
+            </select>
         </div>
 
         <div>
@@ -46,7 +56,7 @@ if (isset($_GET['id'])) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label for="price" class="block text-sm font-medium text-gray-700">Harga (Rp)</label>
-                <input type="number" name="price" id="price" step="0.01" required value="<?php echo htmlspecialchars($product['price'] ?? ''); ?>" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                <input type="number" name="price" id="price" step="1" required value="<?php echo htmlspecialchars($product['price'] ?? ''); ?>" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
             </div>
             <div>
                 <label for="stock" class="block text-sm font-medium text-gray-700">Stok</label>
@@ -60,13 +70,13 @@ if (isset($_GET['id'])) {
             <?php if ($is_edit && $product['image']): ?>
                 <div class="mt-4">
                     <p class="text-sm text-gray-500">Gambar saat ini:</p>
-                    <img src="assets/images/<?php echo htmlspecialchars($product['image']); ?>" alt="Current Image" class="mt-2 h-32 w-32 object-cover rounded-md">
+                    <img src="../assets/images/<?php echo htmlspecialchars($product['image']); ?>" alt="Current Image" class="mt-2 h-32 w-32 object-cover rounded-md">
                 </div>
             <?php endif; ?>
         </div>
         
         <div class="flex justify-end space-x-4">
-            <a href="index.php?page=admin_dashboard" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded hover:bg-gray-300">Batal</a>
+            <a href="index.php?page=products" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded hover:bg-gray-300">Batal</a>
             <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700">
                 <?php echo $is_edit ? 'Simpan Perubahan' : 'Tambah Produk'; ?>
             </button>

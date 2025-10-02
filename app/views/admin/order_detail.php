@@ -1,13 +1,8 @@
 <?php
 // File: app/views/admin/order_detail.php
-require_once '../app/models/User.php';
-$user_model = new User($conn);
-if (!isset($_SESSION['user_id']) || !$user_model->isAdmin($_SESSION['user_id']) || !isset($_GET['id'])) {
-    header('Location: index.php');
-    exit();
-}
-require_once '../app/models/Order.php';
-require_once '../app/models/Payment.php';
+// Hapus pengecekan admin dan require_once untuk User.php
+require_once BASE_PATH . '/app/models/Order.php';
+require_once BASE_PATH . '/app/models/Payment.php';
 
 $order_model = new Order($conn);
 $payment_model = new Payment($conn);
@@ -31,11 +26,10 @@ $possible_statuses = ['Menunggu Pembayaran', 'Diproses', 'Dikirim', 'Selesai', '
 <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
     <div class="lg:col-span-2 bg-white shadow rounded-lg p-6">
         <h3 class="text-lg font-medium text-gray-900">Item Pesanan</h3>
-        <!-- Sama seperti detail order user -->
          <ul role="list" class="divide-y divide-gray-200 mt-4">
             <?php foreach($order_items as $item): ?>
             <li class="p-4 flex">
-                <img src="assets/images/<?php echo htmlspecialchars($item['product_image'] ?? 'default.jpg'); ?>" class="h-24 w-24 rounded-md object-cover">
+                <img src="../assets/images/<?php echo htmlspecialchars($item['product_image'] ?? 'default.jpg'); ?>" class="h-24 w-24 rounded-md object-cover">
                 <div class="ml-4 flex-1 flex flex-col">
                     <div>
                         <div class="flex justify-between text-base font-medium text-gray-900">
@@ -55,7 +49,7 @@ $possible_statuses = ['Menunggu Pembayaran', 'Diproses', 'Dikirim', 'Selesai', '
     <div>
         <div class="bg-white shadow p-6 rounded-lg">
             <h3 class="text-lg font-medium">Update Status</h3>
-            <form action="../app/controllers/admin_handler.php" method="POST" class="mt-4">
+            <form action="../../app/controllers/admin_handler.php" method="POST" class="mt-4">
                 <input type="hidden" name="action" value="update_order_status">
                 <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
                 <label for="status" class="block text-sm font-medium text-gray-700">Status Pesanan</label>
@@ -71,9 +65,10 @@ $possible_statuses = ['Menunggu Pembayaran', 'Diproses', 'Dikirim', 'Selesai', '
         <div class="mt-6 bg-white shadow p-6 rounded-lg">
             <h3 class="text-lg font-medium">Verifikasi Pembayaran</h3>
             <p class="text-sm text-gray-600 mt-2">Pemesan telah mengunggah bukti pembayaran.</p>
-            <a href="../public/uploads/<?php echo htmlspecialchars($payment['payment_proof']); ?>" target="_blank" class="mt-2 inline-block bg-green-500 text-white font-bold py-2 px-4 rounded hover:bg-green-600">Lihat Bukti Pembayaran</a>
+            <!-- Memperbaiki path untuk lihat bukti -->
+            <a href="../uploads/<?php echo htmlspecialchars($payment['payment_proof']); ?>" target="_blank" class="mt-2 inline-block bg-green-500 text-white font-bold py-2 px-4 rounded hover:bg-green-600">Lihat Bukti Pembayaran</a>
             <?php if($order['status'] == 'Menunggu Pembayaran'): ?>
-                <form action="../app/controllers/admin_handler.php" method="POST" class="mt-4">
+                <form action="../../app/controllers/admin_handler.php" method="POST" class="mt-4">
                     <input type="hidden" name="action" value="update_order_status">
                     <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
                     <input type="hidden" name="status" value="Diproses">

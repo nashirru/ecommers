@@ -1,25 +1,28 @@
 <?php
 // File: public/index.php (Router Utama Toko)
 session_start();
-require_once '../config/db.php';
+
+define('BASE_PATH', dirname(__DIR__));
+
+require_once BASE_PATH . '/config/db.php';
+require_once BASE_PATH . '/config/helpers.php';
 
 // --- Perbaikan Redirect Admin ---
-// Jika user yang sudah login adalah admin, langsung tendang ke admin panel.
 if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']) {
     header('Location: admin/index.php');
     exit();
 }
 // --- Akhir Perbaikan ---
 
+// Memuat semua pengaturan dari DB ke variabel $settings
+$settings = load_settings($conn);
 
 // Tentukan halaman yang akan ditampilkan
 $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 
 // --- Perubahan Keamanan ---
-// Jangan biarkan router publik memuat halaman admin secara langsung.
-// Ini memaksa semua akses admin melalui /public/admin/index.php
 if (strpos($page, 'admin') === 0) {
-    header('Location: index.php?page=home'); // Alihkan ke home jika mencoba akses admin
+    header('Location: index.php?page=home');
     exit();
 }
 // --- Akhir Perubahan Keamanan ---
@@ -30,17 +33,14 @@ $auth_required_pages = ['dashboard', 'checkout', 'orders', 'order_detail', 'orde
 
 // Pengecekan keamanan dijalankan SEBELUM output HTML apapun.
 if (in_array($page, $auth_required_pages) && !isset($_SESSION['user_id'])) {
-    // Jika halaman butuh login tapi user belum login, alihkan ke halaman login.
-    // Simpan halaman tujuan agar bisa kembali setelah login.
     header('Location: ../auth/login.php?redirect=' . urlencode($page));
     exit(); 
 }
 
-// Handler untuk form POST (seperti saat checkout)
+// Handler untuk form POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'checkout') {
-        // Logika ini hanya akan berjalan jika user sudah pasti login (karena sudah dicek di atas)
-        require_once '../app/models/Order.php';
+        require_once BASE_PATH . '/app/models/Order.php';
         $order_model = new Order($conn);
         $userId = $_SESSION['user_id'];
         $address = $_POST['address'];
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cart = $_SESSION['cart'] ?? [];
         
         if (!empty($cart)) {
-            require_once '../app/models/Product.php';
+            require_once BASE_PATH . '/app/models/Product.php';
             $product_model = new Product($conn);
             $product_ids = array_keys($cart);
             $products = $product_model->getMultipleByIds($product_ids);
@@ -80,16 +80,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 // Setelah semua logika redirect selesai, baru kita panggil file tampilan
-require_once '../app/views/partials/header.php';
+require_once BASE_PATH . '/app/views/partials/header.php';
 
-$view_path = '../app/views/' . $page . '.php';
+$view_path = BASE_PATH . '/app/views/' . $page . '.php';
 
 if (file_exists($view_path)) {
     require_once $view_path;
 } else {
-    // Jika halaman tidak ada, tampilkan halaman utama
-    require_once '../app/views/home.php';
+    require_once BASE_PATH . '/app/views/home.php';
 }
 
-require_once '../app/views/partials/footer.php';
+require_once BASE_PATH . '/app/views/partials/footer.php';
 ?>

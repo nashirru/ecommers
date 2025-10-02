@@ -1,7 +1,6 @@
 <?php
 // File: app/views/admin/products.php
-// (File ini adalah hasil rename dari app/views/admin/dashboard.php sebelumnya)
-require_once '../../app/models/Product.php';
+require_once BASE_PATH . '/app/models/Product.php';
 $product_model = new Product($conn);
 $products = $product_model->getAll();
 $status = $_GET['status'] ?? '';
@@ -28,6 +27,7 @@ $status = $_GET['status'] ?? '';
             <tr>
                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Gambar</th>
                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nama Produk</th>
+                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kategori</th>
                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Harga</th>
                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Stok</th>
                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
@@ -41,6 +41,9 @@ $status = $_GET['status'] ?? '';
                 </td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                     <p class="text-gray-900 whitespace-no-wrap"><?php echo htmlspecialchars($product['name']); ?></p>
+                </td>
+                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <p class="text-gray-900 whitespace-no-wrap"><?php echo htmlspecialchars($product['category_name'] ?? 'N/A'); ?></p>
                 </td>
                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                     <p class="text-gray-900 whitespace-no-wrap">Rp <?php echo number_format($product['price'], 0, ',', '.'); ?></p>
@@ -60,7 +63,7 @@ $status = $_GET['status'] ?? '';
             <?php endforeach; ?>
              <?php if (empty($products)): ?>
                 <tr>
-                    <td colspan="5" class="text-center py-10 text-gray-500">Belum ada produk.</td>
+                    <td colspan="6" class="text-center py-10 text-gray-500">Belum ada produk.</td>
                 </tr>
             <?php endif; ?>
         </tbody>
