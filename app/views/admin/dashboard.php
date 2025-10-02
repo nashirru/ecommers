@@ -1,78 +1,48 @@
 <?php
 // File: app/views/admin/dashboard.php
-require_once '../app/models/User.php';
-$user_model = new User($conn);
+// Halaman ini sekarang menjadi dashboard utama admin
+require_once '../../app/models/Order.php';
+$order_model = new Order($conn);
+$report = $order_model->getSalesReport();
 
-// Proteksi halaman, hanya untuk admin
-if (!isset($_SESSION['user_id']) || !$user_model->isAdmin($_SESSION['user_id'])) {
-    header('Location: index.php?page=home');
-    exit();
-}
-require_once '../app/models/Product.php';
-$product_model = new Product($conn);
-$products = $product_model->getAll();
-$status = $_GET['status'] ?? '';
+// Tambahan data untuk dashboard
+$result_total_orders = $conn->query("SELECT COUNT(*) as total FROM orders");
+$total_orders = $result_total_orders->fetch_assoc()['total'];
+
+$result_pending_orders = $conn->query("SELECT COUNT(*) as total FROM orders WHERE status = 'Menunggu Pembayaran' OR status = 'Diproses'");
+$pending_orders = $result_pending_orders->fetch_assoc()['total'];
+
+$result_total_products = $conn->query("SELECT COUNT(*) as total FROM products");
+$total_products = $result_total_products->fetch_assoc()['total'];
 ?>
 
-<header class="bg-white shadow">
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Manajemen Produk</h1>
-        <a href="index.php?page=admin_product_form" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-            + Tambah Produk Baru
-        </a>
-    </div>
-</header>
-<div class="mt-6">
-    <?php if ($status === 'created'): ?>
-        <div class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">Produk berhasil ditambahkan.</div>
-    <?php elseif ($status === 'updated'): ?>
-        <div class="p-4 mb-4 text-sm text-blue-700 bg-blue-100 rounded-lg">Produk berhasil diperbarui.</div>
-    <?php elseif ($status === 'deleted'): ?>
-        <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">Produk berhasil dihapus.</div>
-    <?php endif; ?>
+<h1 class="text-3xl font-bold tracking-tight text-gray-900">Dashboard</h1>
 
-    <div class="overflow-x-auto bg-white rounded-lg shadow">
-        <table class="min-w-full leading-normal">
-            <thead>
-                <tr>
-                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Gambar</th>
-                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nama Produk</th>
-                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Harga</th>
-                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Stok</th>
-                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($products as $product): ?>
-                <tr>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <img src="assets/images/<?php echo htmlspecialchars($product['image']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" class="w-16 h-16 object-cover rounded">
-                    </td>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <p class="text-gray-900 whitespace-no-wrap"><?php echo htmlspecialchars($product['name']); ?></p>
-                    </td>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <p class="text-gray-900 whitespace-no-wrap">Rp <?php echo number_format($product['price'], 0, ',', '.'); ?></p>
-                    </td>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <p class="text-gray-900 whitespace-no-wrap"><?php echo htmlspecialchars($product['stock']); ?></p>
-                    </td>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <a href="index.php?page=admin_product_form&id=<?php echo $product['id']; ?>" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                        <form action="../app/controllers/admin_handler.php" method="POST" onsubmit="return confirm('Anda yakin ingin menghapus produk ini?');" class="inline-block ml-4">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="id" value="<?php echo $product['id']; ?>">
-                            <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
-                        </form>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                 <?php if (empty($products)): ?>
-                    <tr>
-                        <td colspan="5" class="text-center py-10 text-gray-500">Belum ada produk.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+<div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Total Omzet Card -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-medium text-gray-500">Total Omzet</h3>
+        <p class="mt-2 text-3xl font-bold text-green-600">Rp <?php echo number_format($report['total_revenue'] ?? 0, 0, ',', '.'); ?></p>
+        <p class="text-sm text-gray-400 mt-1">Dari pesanan yang selesai</p>
+    </div>
+
+    <!-- Total Pesanan Card -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-medium text-gray-500">Total Pesanan</h3>
+        <p class="mt-2 text-3xl font-bold text-indigo-600"><?php echo $total_orders; ?></p>
+        <p class="text-sm text-gray-400 mt-1">Semua status pesanan</p>
+    </div>
+
+    <!-- Pesanan Perlu Diproses Card -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-medium text-gray-500">Perlu Diproses</h3>
+        <p class="mt-2 text-3xl font-bold text-yellow-600"><?php echo $pending_orders; ?></p>
+        <p class="text-sm text-gray-400 mt-1">Pesanan baru & menunggu</p>
+    </div>
+     <!-- Total Produk Card -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-medium text-gray-500">Jumlah Produk</h3>
+        <p class="mt-2 text-3xl font-bold text-blue-600"><?php echo $total_products; ?></p>
+        <p class="text-sm text-gray-400 mt-1">Item yang dijual</p>
     </div>
 </div>

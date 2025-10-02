@@ -2,10 +2,21 @@
 // File: auth/login.php
 session_start();
 
-// Jika sudah login, redirect ke dashboard
+// Jika sudah login, redirect sesuai role
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../public/index.php?page=dashboard");
+    if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']) {
+        header("Location: ../public/admin/index.php");
+    } else {
+        header("Location: ../public/index.php?page=dashboard");
+    }
     exit();
+}
+
+// Simpan URL tujuan (misalnya 'checkout') ke dalam session jika ada
+if (isset($_GET['redirect'])) {
+    $allowed_redirect_pages = ['checkout', 'orders', 'dashboard', 'order_detail'];
+    $redirect_page = in_array($_GET['redirect'], $allowed_redirect_pages) ? $_GET['redirect'] : 'dashboard';
+    $_SESSION['redirect_url'] = '../public/index.php?page=' . urlencode($redirect_page);
 }
 
 require_once '../config/db.php';
@@ -29,12 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['email'] = $user['email'];
             $_SESSION['is_admin'] = $user['is_admin'];
             
-            // Cek jika ada URL redirect setelah login (misal dari checkout)
-            $redirect_url = $_SESSION['redirect_url'] ?? '../public/index.php?page=dashboard';
-            unset($_SESSION['redirect_url']); // Hapus setelah digunakan
-            
-            header("Location: " . $redirect_url);
+            // --- Perbaikan Utama: Redirect Berdasarkan Role ---
+            if ($user['is_admin']) {
+                // Jika admin, selalu redirect ke admin dashboard
+                header("Location: ../public/admin/index.php");
+            } else {
+                // Jika bukan admin, gunakan logika redirect sebelumnya (ke checkout atau user dashboard)
+                $redirect_url = $_SESSION['redirect_url'] ?? '../public/index.php?page=dashboard';
+                unset($_SESSION['redirect_url']);
+                header("Location: " . $redirect_url);
+            }
             exit();
+
         } else {
             $error_message = "Email atau password salah.";
         }
@@ -43,7 +60,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="id">
-<!-- ... Sisa kode HTML sama seperti sebelumnya ... -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -68,19 +84,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form class="space-y-6" action="login.php" method="POST">
-            <div>
-                <label for="email" class="text-sm font-medium text-gray-700">Alamat Email</label>
-                <input id="email" name="email" type="email" autocomplete="email" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="password" class="text-sm font-medium text-gray-700">Password</label>
-                <input id="password" name="password" type="password" autocomplete="current-password" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <button type="submit" class="w-full px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Masuk
-                </button>
+        <form action="login.php" method="POST">
+            <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($_GET['redirect'] ?? ''); ?>">
+            <div class="space-y-6">
+                 <div>
+                    <label for="email" class="text-sm font-medium text-gray-700">Alamat Email</label>
+                    <input id="email" name="email" type="email" autocomplete="email" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="password" class="text-sm font-medium text-gray-700">Password</label>
+                    <input id="password" name="password" type="password" autocomplete="current-password" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <button type="submit" class="w-full px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Masuk
+                    </button>
+                </div>
             </div>
         </form>
         <p class="text-sm text-center text-gray-600">

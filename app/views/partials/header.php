@@ -87,7 +87,7 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
                     <a href="index.php?page=home" class="text-gray-600 hover:text-indigo-600 font-medium">Home</a>
                     <a href="index.php?page=products" class="text-gray-600 hover:text-indigo-600 font-medium">Semua Produk</a>
                     <?php if ($is_admin): ?>
-                        <a href="index.php?page=admin_dashboard" class="text-gray-600 hover:text-indigo-600 font-medium">Admin Dashboard</a>
+                        <a href="admin/" class="text-red-500 hover:text-indigo-600 font-bold">Admin Panel</a>
                     <?php elseif (isset($_SESSION['user_id'])): ?>
                         <a href="index.php?page=orders" class="text-gray-600 hover:text-indigo-600 font-medium">Pesanan Saya</a>
                     <?php endif; ?>
