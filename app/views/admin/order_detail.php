@@ -1,6 +1,5 @@
 <?php
 // File: app/views/admin/order_detail.php
-// Hapus pengecekan admin dan require_once untuk User.php
 require_once BASE_PATH . '/app/models/Order.php';
 require_once BASE_PATH . '/app/models/Payment.php';
 
@@ -16,7 +15,8 @@ if (!$order) {
 
 $order_items = $order_model->getOrderItems($order_id);
 $payment = $payment_model->getByOrderId($order_id);
-$possible_statuses = ['Menunggu Pembayaran', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan'];
+// Perubahan: Menambahkan status baru dan mengatur ulang urutan
+$possible_statuses = ['Menunggu Pembayaran', 'Belum Dicetak', 'Sedang Diproses', 'Dalam Pengiriman', 'Selesai', 'Dibatalkan'];
 ?>
 <header class="bg-white shadow">
     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -65,14 +65,14 @@ $possible_statuses = ['Menunggu Pembayaran', 'Diproses', 'Dikirim', 'Selesai', '
         <div class="mt-6 bg-white shadow p-6 rounded-lg">
             <h3 class="text-lg font-medium">Verifikasi Pembayaran</h3>
             <p class="text-sm text-gray-600 mt-2">Pemesan telah mengunggah bukti pembayaran.</p>
-            <!-- Memperbaiki path untuk lihat bukti -->
             <a href="../uploads/<?php echo htmlspecialchars($payment['payment_proof']); ?>" target="_blank" class="mt-2 inline-block bg-green-500 text-white font-bold py-2 px-4 rounded hover:bg-green-600">Lihat Bukti Pembayaran</a>
             <?php if($order['status'] == 'Menunggu Pembayaran'): ?>
                 <form action="../../app/controllers/admin_handler.php" method="POST" class="mt-4">
                     <input type="hidden" name="action" value="update_order_status">
                     <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
-                    <input type="hidden" name="status" value="Diproses">
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">Verifikasi & Proses Pesanan</button>
+                    <!-- Perubahan: Setelah verifikasi, status menjadi 'Belum Dicetak' -->
+                    <input type="hidden" name="status" value="Belum Dicetak">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">Verifikasi & Siapkan Pesanan</button>
                 </form>
             <?php endif; ?>
         </div>

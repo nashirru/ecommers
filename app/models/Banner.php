@@ -26,7 +26,7 @@ class Banner {
     }
 
     public function create($title, $subtitle, $link, $image) {
-        // PERBAIKAN KUNCI: Secara otomatis mengatur is_active = 1 saat banner baru dibuat.
+        // PERBAIKAN: Secara otomatis mengatur is_active = 1 saat banner baru dibuat.
         // Ini memastikan setiap banner baru yang ditambahkan akan langsung tampil.
         $is_active = 1;
         $stmt = $this->conn->prepare("INSERT INTO banners (title, subtitle, link, image, is_active) VALUES (?, ?, ?, ?, ?)");

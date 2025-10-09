@@ -12,8 +12,10 @@ class Order {
         $this->conn->begin_transaction();
         try {
             $invoiceNumber = 'WK-' . strtoupper(uniqid());
-            $stmt = $this->conn->prepare("INSERT INTO orders (user_id, invoice_number, total_amount, shipping_address, payment_method) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("isdss", $userId, $invoiceNumber, $total, $address, $paymentMethod);
+            // Perubahan: Menambahkan status 'Belum Dicetak' saat order dibuat
+            $status = 'Belum Dicetak';
+            $stmt = $this->conn->prepare("INSERT INTO orders (user_id, invoice_number, total_amount, shipping_address, payment_method, status) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isdsss", $userId, $invoiceNumber, $total, $address, $paymentMethod, $status);
             $stmt->execute();
             $orderId = $stmt->insert_id;
 
@@ -89,14 +91,54 @@ class Order {
     }
 
     /**
-     * (ADMIN) Mengambil semua pesanan.
+     * (ADMIN) Mengambil beberapa pesanan berdasarkan array ID.
+     * @param array $ids
      * @return array
      */
-    public function getAllOrders() {
-        $sql = "SELECT o.*, u.username FROM orders o JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC";
-        $result = $this->conn->query($sql);
+    public function getMultipleOrdersByIds($ids) {
+        if (empty($ids)) {
+            return [];
+        }
+        $in_clause = str_repeat('?,', count($ids) - 1) . '?';
+        $types = str_repeat('i', count($ids));
+        $sql = "SELECT o.*, u.username FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id IN ($in_clause)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param($types, ...$ids);
+        $stmt->execute();
+        $result = $stmt->get_result();
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+
+    /**
+     * (ADMIN) Mengambil semua pesanan, bisa difilter berdasarkan status.
+     * @param string|null $status
+     * @return array
+     */
+    public function getAllOrders($status = null, $exclude_statuses = null) {
+        $sql = "SELECT o.*, u.username FROM orders o JOIN users u ON o.user_id = u.id";
+        
+        if ($status) {
+            $sql .= " WHERE o.status = ?";
+        } elseif ($exclude_statuses && is_array($exclude_statuses)) {
+            $placeholders = implode(',', array_fill(0, count($exclude_statuses), '?'));
+            $sql .= " WHERE o.status NOT IN ($placeholders)";
+        }
+        
+        $sql .= " ORDER BY o.created_at DESC";
+
+        $stmt = $this->conn->prepare($sql);
+
+        if ($status) {
+            $stmt->bind_param("s", $status);
+        } elseif ($exclude_statuses) {
+            $stmt->bind_param(str_repeat('s', count($exclude_statuses)), ...$exclude_statuses);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
 
     /**
      * (ADMIN) Mengupdate status pesanan.
@@ -109,6 +151,26 @@ class Order {
         $stmt->bind_param("si", $status, $orderId);
         return $stmt->execute();
     }
+
+    /**
+     * (ADMIN) Mengupdate status untuk beberapa pesanan sekaligus.
+     * @param array $orderIds
+     * @param string $status
+     * @return bool
+     */
+    public function updateStatusForMultiple($orderIds, $status) {
+        if (empty($orderIds)) {
+            return false;
+        }
+        $in_clause = str_repeat('?,', count($orderIds) - 1) . '?';
+        $types = 's' . str_repeat('i', count($orderIds));
+        $params = array_merge([$status], $orderIds);
+
+        $stmt = $this->conn->prepare("UPDATE orders SET status = ? WHERE id IN ($in_clause)");
+        $stmt->bind_param($types, ...$params);
+        return $stmt->execute();
+    }
+
 
     /**
      * (ADMIN) Mengambil data laporan penjualan.
