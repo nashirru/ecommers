@@ -116,10 +116,12 @@ $banners_json = json_encode(array_map(function($banner) {
                         </h3>
                         <p class="text-gray-600 mt-2 font-bold text-xl">Rp <?php echo number_format($product['price'], 0, ',', '.'); ?></p>
                         <div class="mt-4 mt-auto">
-                            <form action="app/controllers/cart_handler.php" method="POST">
+                            <form action="../app/controllers/cart_handler.php" method="POST">
                                 <input type="hidden" name="action" value="add">
                                 <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
                                 <input type="hidden" name="quantity" value="1">
+                                <!-- PERBAIKAN: Input hidden untuk memberitahu handler halaman mana yang harus dituju setelah proses -->
+                                <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI']); ?>">
                                 <button type="submit" class="w-full text-center block bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">
                                     + Keranjang
                                 </button>
@@ -131,6 +133,3 @@ $banners_json = json_encode(array_map(function($banner) {
         </div>
     </div>
 </div>
-
-<!-- Pastikan Alpine.js disertakan -->
-<script src="//unpkg.com/alpinejs" defer></script>

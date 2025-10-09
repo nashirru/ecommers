@@ -78,12 +78,15 @@ class Product {
 
     /**
      * Memperbarui data produk.
+     * PERBAIKAN: Menambahkan parameter $categoryId
      */
     public function update($id, $name, $description, $price, $stock, $categoryId, $image = null) {
         if ($image) {
+            // PERBAIKAN: Menambahkan category_id = ? di query UPDATE
             $stmt = $this->conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, image = ? WHERE id = ?");
             $stmt->bind_param("ssdiisi", $name, $description, $price, $stock, $categoryId, $image, $id);
         } else {
+            // PERBAIKAN: Menambahkan category_id = ? di query UPDATE
             $stmt = $this->conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ? WHERE id = ?");
             $stmt->bind_param("ssdisi", $name, $description, $price, $stock, $categoryId, $id);
         }

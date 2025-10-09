@@ -26,8 +26,11 @@ class Banner {
     }
 
     public function create($title, $subtitle, $link, $image) {
-        $stmt = $this->conn->prepare("INSERT INTO banners (title, subtitle, link, image) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $title, $subtitle, $link, $image);
+        // PERBAIKAN KUNCI: Secara otomatis mengatur is_active = 1 saat banner baru dibuat.
+        // Ini memastikan setiap banner baru yang ditambahkan akan langsung tampil.
+        $is_active = 1;
+        $stmt = $this->conn->prepare("INSERT INTO banners (title, subtitle, link, image, is_active) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssi", $title, $subtitle, $link, $image, $is_active);
         return $stmt->execute();
     }
 
@@ -46,7 +49,7 @@ class Banner {
         // Hapus juga file gambar terkait
         $banner = $this->getById($id);
         if ($banner && !empty($banner['image'])) {
-            $image_path = '../public/assets/images/banners/' . $banner['image'];
+            $image_path = '../../public/assets/images/banners/' . $banner['image'];
             if (file_exists($image_path)) {
                 unlink($image_path);
             }

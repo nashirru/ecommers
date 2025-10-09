@@ -20,6 +20,8 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warok Kite - Toko Layangan Modern</title>
     <script src="https://cdn.tailwindcss.com/"></script>
+    <!-- PERBAIKAN: Memindahkan Alpine.js ke header agar tersedia di semua halaman -->
+    <script src="//unpkg.com/alpinejs" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; }
@@ -27,7 +29,43 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 </head>
 <body class="h-full">
     <div class="min-h-full">
-        <header class="bg-white shadow-md sticky top-0 z-50">
+        <!-- PERBAIKAN: Menambahkan komponen Notifikasi Toast -->
+        <div
+            x-data="{ show: false, message: '' }"
+            x-init="() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('status') && urlParams.get('status') === 'added_toast') {
+                    show = true;
+                    message = 'Produk berhasil ditambahkan!';
+                    setTimeout(() => show = false, 3000);
+                    // Membersihkan URL agar notifikasi tidak muncul lagi saat refresh
+                    const cleanUrl = window.location.toString().replace(/([&?])status=added_toast/, '');
+                    window.history.replaceState({}, document.title, cleanUrl);
+                }
+            }"
+            x-show="show"
+            x-transition:enter="transform ease-out duration-300 transition"
+            x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+            x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed top-24 right-5 w-full max-w-xs p-4 bg-white border rounded-lg shadow-lg z-50 pointer-events-auto"
+            style="display: none;"
+        >
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="w-6 h-6 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <p class="text-sm font-medium text-gray-900" x-text="message"></p>
+                </div>
+            </div>
+        </div>
+
+        <header class="bg-white shadow-md sticky top-0 z-40">
             <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="flex h-20 items-center justify-between">
                     <!-- Logo -->

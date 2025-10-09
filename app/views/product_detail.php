@@ -36,6 +36,8 @@ if (!$product) {
                     <div class="flex items-center space-x-4">
                         <label for="quantity" class="font-medium">Jumlah:</label>
                         <input type="number" id="quantity" name="quantity" value="1" min="1" max="<?php echo $product['stock']; ?>" class="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <!-- PERBAIKAN: Input hidden untuk memberitahu handler halaman mana yang harus dituju setelah proses -->
+                        <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI']); ?>">
                         <button type="submit" class="w-full bg-indigo-600 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             Tambah ke Keranjang
                         </button>

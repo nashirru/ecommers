@@ -25,6 +25,8 @@ if ($action === 'create_product') {
     $desc = trim($_POST['description']);
     $price = $_POST['price'];
     $stock = $_POST['stock'];
+    // PERBAIKAN: Ambil category_id dari form
+    $categoryId = $_POST['category_id'];
     $image_name = null;
 
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
@@ -36,7 +38,8 @@ if ($action === 'create_product') {
         $image_name = 'default.jpg';
     }
 
-    $product_model->create($name, $desc, $price, $stock, $image_name);
+    // PERBAIKAN: Kirim categoryId ke model
+    $product_model->create($name, $desc, $price, $stock, $categoryId, $image_name);
     header("Location: ../../public/admin/index.php?page=products&status=created");
     exit();
 }
@@ -48,6 +51,8 @@ if ($action === 'update_product') {
     $desc = trim($_POST['description']);
     $price = $_POST['price'];
     $stock = $_POST['stock'];
+    // PERBAIKAN: Ambil category_id dari form saat update
+    $categoryId = $_POST['category_id'];
     $image_name = null;
 
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
@@ -57,7 +62,8 @@ if ($action === 'update_product') {
         move_uploaded_file($_FILES["image"]["tmp_name"], $target_file);
     }
 
-    $product_model->update($id, $name, $desc, $price, $stock, $image_name);
+    // PERBAIKAN: Kirim categoryId ke model saat update
+    $product_model->update($id, $name, $desc, $price, $stock, $categoryId, $image_name);
     header("Location: ../../public/admin/index.php?page=products&status=updated");
     exit();
 }
@@ -115,7 +121,8 @@ if ($action === 'update_banner') {
         $image_name = uniqid() . '_' . basename($_FILES["image"]["name"]);
         move_uploaded_file($_FILES["image"]["tmp_name"], $target_dir . $image_name);
     }
-    $banner_model->update($_POST['id'], $_POST['title'], $_POST['subtitle'], $_POST['link'], $_POST['is_active'], $image_name);
+    $is_active = isset($_POST['is_active']) ? (int)$_POST['is_active'] : 0;
+    $banner_model->update($_POST['id'], $_POST['title'], $_POST['subtitle'], $_POST['link'], $is_active, $image_name);
     header("Location: ../../public/admin/index.php?page=banners&status=updated");
     exit();
 }

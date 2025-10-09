@@ -27,14 +27,13 @@ switch ($action) {
                 $_SESSION['cart'][$product_id] = ['quantity' => $quantity];
             }
             
-            // PERBAIKAN KUNCI: Mengambil URL dari input 'return_url' untuk kembali ke halaman asal.
+            // PERBAIKAN: Mengambil URL dari input 'return_url' untuk kembali ke halaman asal.
             $return_url = $_POST['return_url'] ?? '../../public/index.php?page=home';
             
             // Menambahkan parameter status untuk memicu notifikasi toast
             $separator = (parse_url($return_url, PHP_URL_QUERY) == NULL) ? '?' : '&';
             $redirect_url = $return_url . $separator . 'status=added_toast';
             
-            // Mengarahkan kembali ke halaman tempat pengguna mengklik "Tambah Keranjang"
             header('Location: ' . $redirect_url);
             exit();
         }
@@ -47,6 +46,7 @@ switch ($action) {
             } else {
                 unset($_SESSION['cart'][$product_id]);
             }
+            // Aksi update dan remove tetap di halaman keranjang
             header('Location: ../../public/index.php?page=cart&status=updated');
             exit();
         }
