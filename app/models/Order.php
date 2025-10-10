@@ -8,14 +8,24 @@ class Order {
         $this->conn = $db_connection;
     }
 
+    /**
+     * Membuat pesanan baru.
+     * @param int $userId
+     * @param string $address
+     * @param float $total
+     * @param array $cartItems
+     * @param string $paymentMethod
+     * @return array|bool
+     */
     public function create($userId, $address, $total, $cartItems, $paymentMethod) {
         $this->conn->begin_transaction();
         try {
             $invoiceNumber = 'WK-' . strtoupper(uniqid());
-            // Perubahan: Menambahkan status 'Belum Dicetak' saat order dibuat
-            $status = 'Belum Dicetak';
-            $stmt = $this->conn->prepare("INSERT INTO orders (user_id, invoice_number, total_amount, shipping_address, payment_method, status) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("isdsss", $userId, $invoiceNumber, $total, $address, $paymentMethod, $status);
+            $status = 'Menunggu Pembayaran';
+            $shippingCost = 15000; // Default biaya pengiriman
+            
+            $stmt = $this->conn->prepare("INSERT INTO orders (user_id, invoice_number, total_amount, shipping_cost, shipping_address, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isddsss", $userId, $invoiceNumber, $total, $shippingCost, $address, $paymentMethod, $status);
             $stmt->execute();
             $orderId = $stmt->insert_id;
 
@@ -34,7 +44,7 @@ class Order {
 
         } catch (Exception $e) {
             $this->conn->rollback();
-            // error_log($e->getMessage()); // Aktifkan untuk debugging
+            error_log($e->getMessage());
             return false;
         }
     }
@@ -53,24 +63,38 @@ class Order {
     }
 
     /**
-     * Mengambil detail satu pesanan.
+     * Mengambil detail satu pesanan dengan join ke users.
      * @param int $orderId
      * @param int|null $userId (opsional, untuk verifikasi kepemilikan)
      * @return array|null
      */
     public function getById($orderId, $userId = null) {
-        $sql = "SELECT * FROM orders WHERE id = ?";
+        $sql = "SELECT o.*, u.username, u.email 
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id 
+                WHERE o.id = ?";
+        
         if ($userId) {
-            $sql .= " AND user_id = ?";
+            $sql .= " AND o.user_id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("ii", $orderId, $userId);
         } else {
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $orderId);
         }
+        
         $stmt->execute();
         $result = $stmt->get_result();
         return $result->fetch_assoc();
+    }
+
+    /**
+     * Mengambil data order berdasarkan ID (alias untuk getById tanpa userId).
+     * @param int $orderId
+     * @return array|null
+     */
+    public function getOrderById($orderId) {
+        return $this->getById($orderId);
     }
 
     /**
@@ -79,7 +103,7 @@ class Order {
      * @return array
      */
     public function getOrderItems($orderId) {
-        $sql = "SELECT oi.*, p.name as product_name, p.image as product_image 
+        $sql = "SELECT oi.*, p.name, p.image 
                 FROM order_items oi 
                 LEFT JOIN products p ON oi.product_id = p.id 
                 WHERE oi.order_id = ?";
@@ -99,9 +123,16 @@ class Order {
         if (empty($ids)) {
             return [];
         }
-        $in_clause = str_repeat('?,', count($ids) - 1) . '?';
+        
+        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
         $types = str_repeat('i', count($ids));
-        $sql = "SELECT o.*, u.username FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id IN ($in_clause)";
+        
+        $sql = "SELECT o.*, u.username, u.email 
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id 
+                WHERE o.id IN ($placeholders)
+                ORDER BY o.created_at DESC";
+        
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param($types, ...$ids);
         $stmt->execute();
@@ -112,10 +143,13 @@ class Order {
     /**
      * (ADMIN) Mengambil semua pesanan, bisa difilter berdasarkan status.
      * @param string|null $status
+     * @param array|null $exclude_statuses
      * @return array
      */
     public function getAllOrders($status = null, $exclude_statuses = null) {
-        $sql = "SELECT o.*, u.username FROM orders o JOIN users u ON o.user_id = u.id";
+        $sql = "SELECT o.*, u.username, u.email 
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id";
         
         if ($status) {
             $sql .= " WHERE o.status = ?";
@@ -139,7 +173,6 @@ class Order {
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-
     /**
      * (ADMIN) Mengupdate status pesanan.
      * @param int $orderId
@@ -147,7 +180,7 @@ class Order {
      * @return bool
      */
     public function updateStatus($orderId, $status) {
-        $stmt = $this->conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
+        $stmt = $this->conn->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
         $stmt->bind_param("si", $status, $orderId);
         return $stmt->execute();
     }
@@ -162,15 +195,15 @@ class Order {
         if (empty($orderIds)) {
             return false;
         }
-        $in_clause = str_repeat('?,', count($orderIds) - 1) . '?';
+        
+        $placeholders = str_repeat('?,', count($orderIds) - 1) . '?';
         $types = 's' . str_repeat('i', count($orderIds));
         $params = array_merge([$status], $orderIds);
 
-        $stmt = $this->conn->prepare("UPDATE orders SET status = ? WHERE id IN ($in_clause)");
+        $stmt = $this->conn->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id IN ($placeholders)");
         $stmt->bind_param($types, ...$params);
         return $stmt->execute();
     }
-
 
     /**
      * (ADMIN) Mengambil data laporan penjualan.
@@ -178,6 +211,7 @@ class Order {
      */
     public function getSalesReport() {
         $report = [];
+        
         // Total Omzet
         $result = $this->conn->query("SELECT SUM(total_amount) as total_revenue FROM orders WHERE status = 'Selesai'");
         $report['total_revenue'] = $result->fetch_assoc()['total_revenue'] ?? 0;
@@ -194,7 +228,55 @@ class Order {
         $result = $this->conn->query($sql);
         $report['best_selling'] = $result->fetch_all(MYSQLI_ASSOC);
 
+        // Total Pesanan
+        $result = $this->conn->query("SELECT COUNT(*) as total_orders FROM orders");
+        $report['total_orders'] = $result->fetch_assoc()['total_orders'] ?? 0;
+
+        // Pesanan Pending
+        $result = $this->conn->query("SELECT COUNT(*) as pending_orders FROM orders WHERE status IN ('Menunggu Pembayaran', 'Belum Dicetak')");
+        $report['pending_orders'] = $result->fetch_assoc()['pending_orders'] ?? 0;
+
         return $report;
     }
+
+    /**
+     * Menghitung jumlah pesanan berdasarkan status.
+     * @param string $status
+     * @return int
+     */
+    public function countByStatus($status) {
+        $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM orders WHERE status = ?");
+        $stmt->bind_param("s", $status);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        return (int)($row['total'] ?? 0);
+    }
+
+    /**
+     * Menghapus pesanan (jarang digunakan, biasanya hanya ubah status).
+     * @param int $orderId
+     * @return bool
+     */
+    public function delete($orderId) {
+        $this->conn->begin_transaction();
+        try {
+            // Hapus order items dulu
+            $stmt = $this->conn->prepare("DELETE FROM order_items WHERE order_id = ?");
+            $stmt->bind_param("i", $orderId);
+            $stmt->execute();
+
+            // Hapus order
+            $stmt = $this->conn->prepare("DELETE FROM orders WHERE id = ?");
+            $stmt->bind_param("i", $orderId);
+            $stmt->execute();
+
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            error_log($e->getMessage());
+            return false;
+        }
+    }
 }
-?>
